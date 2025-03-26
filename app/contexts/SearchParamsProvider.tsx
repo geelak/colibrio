@@ -1,11 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 const SearchParamsContext = createContext<URLSearchParams | null>(null);
 
-export const SearchParamsProvider = ({ children }: { children: React.ReactNode }) => {
+// Create a separate component that uses useSearchParams
+function SearchParamsContent({ children }: { children: React.ReactNode }) {
 	const searchParams = useSearchParams();
 
 	const memoizedParams = useMemo(() => {
@@ -16,6 +17,15 @@ export const SearchParamsProvider = ({ children }: { children: React.ReactNode }
 		<SearchParamsContext.Provider value={memoizedParams}>
 			{children}
 		</SearchParamsContext.Provider>
+	);
+}
+
+// Wrap the component that uses useSearchParams in Suspense
+export const SearchParamsProvider = ({ children }: { children: React.ReactNode }) => {
+	return (
+		<Suspense fallback={<div>Loading...</div>}>
+			<SearchParamsContent>{children}</SearchParamsContent>
+		</Suspense>
 	);
 };
 
