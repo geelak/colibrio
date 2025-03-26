@@ -1,103 +1,247 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+if (typeof window !== 'undefined' && typeof URL.canParse !== 'function') {
+	URL.canParse = (url) => {
+		try {
+			new URL(url);
+			return true;
+		} catch {
+			return false;
+		}
+	};
+}
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+import { useEffect, useRef, useState, Suspense } from 'react';
+import { useSearchParamsContext } from './contexts/SearchParamsProvider';
+import { ReadingSystemEngine } from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-engine';
+import { EpubFormatAdapter } from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-formatadapter-epub';
+import {
+	EpubOcfResourceProvider,
+} from '@colibrio/colibrio-reader-framework/colibrio-core-publication-epub';
+import {
+	FlipBookRenderer,
+	SingleDocumentScrollRenderer,
+} from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-renderer';
+import {
+	IReaderPublication,
+	IReaderView,
+} from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-base';
+
+
+export const dynamic = 'force-dynamic';
+
+export default function DemoReaderPage() {
+	const containerRef = useRef<HTMLDivElement | null>(null);
+	const engineRef = useRef<ReadingSystemEngine>(null);
+	const readerViewRef = useRef<IReaderView>(null);
+	const publicationRef = useRef<IReaderPublication>(null);
+	const touchStartYRef = useRef<number>(0);
+
+	const [currentPage, setCurrentPage] = useState<number>();
+	const [totalPages, setTotalPages] = useState<number>();
+	const [canGoNext, setCanGoNext] = useState(true);
+	const [canGoPrev, setCanGoPrev] = useState(false);
+	const [readerView, setReaderView] = useState<IReaderView | null>(null);
+	const [epubUrl, setEpubUrl] = useState<string | null>(null);
+
+	const searchParams = useSearchParamsContext();
+
+	useEffect(() => {
+		const epub = searchParams.get('epub');
+		setEpubUrl(epub || '/demo/demo.epub');
+	}, [searchParams]);
+
+	useEffect(() => {
+		if (!containerRef.current || !epubUrl) return;
+		let destroyed = false;
+		
+		const init = async () => {
+			const engine = new ReadingSystemEngine({
+				licenseApiKey: process.env.NEXT_PUBLIC_COLIBRIO_LICENSE_KEY || '',
+			});
+			engine.addFormatAdapter(new EpubFormatAdapter());
+
+			const readerView = engine.createReaderView();
+
+			// Set up renderers
+			const scrollRenderer = new SingleDocumentScrollRenderer();
+			readerView.addRenderer(
+				scrollRenderer,
+				() => window.innerWidth < 800
+			);
+
+			const flipBookRenderer = new FlipBookRenderer({ 
+				animationDurationMs: 500
+			});
+
+			readerView.addRenderer(
+				flipBookRenderer,
+				() => window.innerWidth >= 800
+			);
+
+			// Configure gesture options for the reader view
+			readerView.setOptions({
+				gestureOptions: {
+					swipeNavigation: {
+						// Set the threshold for swipe detection (in pixels)
+						pointerDragThresholdPx: 50,
+						// Configure which pointer types can trigger navigation
+						pointerTypes: {
+							// Enable touch navigation
+							touch: true,
+							// Enable mouse navigation
+							mouse: true
+						}
+					}
+				}
+			});
+
+			// Add keyboard navigation
+			document.addEventListener('keydown', (event) => {
+				if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+					readerView.next();
+				} else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+					readerView.previous();
+				}
+			});
+
+			readerView.renderTo(containerRef.current!);
+
+			// Refresh layout on resize
+			window.addEventListener('resize', () => readerView.refresh());
+
+			engineRef.current = engine;
+			readerViewRef.current = readerView;
+			setReaderView(readerView);
+
+			const response = await fetch(epubUrl);
+			if (!response.ok || destroyed) return;
+
+			const blob = await response.blob();
+			if (destroyed) return;
+
+			const ocfProvider = await EpubOcfResourceProvider.createFromBlob(blob);
+			if (destroyed) return;
+
+			const publication = ocfProvider.getDefaultPublication();
+			if (!publication || destroyed) return;
+
+			const userId = 'demo-user';
+			const userToken = userId;
+			const publicationToken = publication.getHashSignature();
+
+			const readerPublication = await engine.loadPublication(publication, undefined, {
+				userToken,
+				publicationToken,
+			});
+			if (destroyed) return;
+
+			publicationRef.current = readerPublication;
+
+			readerView.setReaderDocuments(readerPublication.getSpine());
+
+			await readerView.goToStart();
+
+			// Ensure state sync (after a short timeout)
+			setTimeout(() => {
+				const timeline = readerView.getPageProgressionTimeline();
+				if (!timeline) return;
+				const range = timeline.getVisibleTimelineRange();
+				setCurrentPage(range.start.pageIndex + 1);
+				setTotalPages(timeline.getTotalNumberOfPages());
+
+				setCanGoNext(readerView.canPerformNext());
+				setCanGoPrev(readerView.canPerformPrevious());
+			}, 100);
+
+			// Navigation events
+			const timeline = readerView.getPageProgressionTimeline();
+			if (!timeline) return;
+
+			readerView.addEngineEventListener('visiblePagesChanged', () => {
+				const timeline = readerView.getPageProgressionTimeline();
+				if (!timeline) return;
+
+				const range = timeline.getVisibleTimelineRange();
+				console.log('Visible pages changed:', range.start.pageIndex, range.end.pageIndex);
+				setCurrentPage(range.start.pageIndex + 1);
+				setTotalPages(timeline.getTotalNumberOfPages());
+			});
+
+			readerView.addEngineEventListener('canPerformNextChanged', () => {
+				setCanGoNext(readerView.canPerformNext());
+			});
+
+			readerView.addEngineEventListener('canPerformPreviousChanged', () => {
+				setCanGoPrev(readerView.canPerformPrevious());
+			});
+		};
+
+		init();
+
+		return () => {
+			destroyed = true;
+			engineRef.current?.destroy();
+		};
+	}, [epubUrl]);
+
+	useEffect(() => {
+		if (!readerView) return;
+
+		const updatePageState = () => {
+			const timeline = readerView.getPageProgressionTimeline();
+			if (!timeline) return;
+
+			const range = timeline.getVisibleTimelineRange();
+			setCurrentPage(range.start.pageIndex + 1);
+			setTotalPages(timeline.getTotalNumberOfPages());
+		};
+
+		updatePageState(); // Initial sync
+
+		const handleVisiblePagesChanged = () => updatePageState();
+		const handleCanNext = () => setCanGoNext(readerView.canPerformNext());
+		const handleCanPrev = () => setCanGoPrev(readerView.canPerformPrevious());
+
+		readerView.addEngineEventListener('visiblePagesChanged', handleVisiblePagesChanged);
+		readerView.addEngineEventListener('canPerformNextChanged', handleCanNext);
+		readerView.addEngineEventListener('canPerformPreviousChanged', handleCanPrev);
+
+		// Cleanup
+		return () => {
+			readerView.removeEngineEventListener('visiblePagesChanged', handleVisiblePagesChanged);
+			readerView.removeEngineEventListener('canPerformNextChanged', handleCanNext);
+			readerView.removeEngineEventListener('canPerformPreviousChanged', handleCanPrev);
+		};
+	}, [readerView]);
+
+	return (
+		<>
+			<div ref={containerRef} className="w-full h-screen bg-neutral-100 relative" />
+
+			{/* Inline navigation bar */}
+			<div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur-md shadow-lg rounded-full px-6 py-2 flex items-center gap-4 z-50">
+				<button
+					onClick={() => {
+						console.log('Prev clicked');
+						readerViewRef.current?.previous();
+					}}
+					disabled={!canGoPrev}
+					className="text-sm text-gray-900 px-3 py-1 rounded disabled:opacity-30"
+				>
+					⬅ Prev
+				</button>
+				<span className="text-xs tabular-nums text-gray-800">
+					Page {currentPage ?? '--'} / {totalPages ?? '--'}
+				</span>
+				<button
+					onClick={() => readerViewRef.current?.next()}
+					disabled={!canGoNext}
+					className="text-sm text-gray-900 px-3 py-1 rounded disabled:opacity-30"
+				>
+					Next ➡
+				</button>
+			</div>
+		</>
+	);
 }
