@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@colibrio/colibrio-reader-framework": "^3.12.1",
+    "@colibrio/colibrio-reader-framework": "^4.2.0",
     "next": "^15.2.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
