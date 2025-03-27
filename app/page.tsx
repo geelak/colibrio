@@ -37,7 +37,7 @@ import {
 import {
 	IReaderPublication,
 	IReaderView,
-	//ContentDisplayAreaType,
+	ContentDisplayAreaType,
 } from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-base';
 
 export const dynamic = 'force-dynamic';
@@ -75,9 +75,9 @@ export default function DemoReaderPage() {
 			engine.addFormatAdapter(new EpubFormatAdapter());
 
 			const readerView = engine.createReaderView({
-				// contentDisplayAreaOptions: { 
-				// 	type: ContentDisplayAreaType.FILL 
-				// },
+				contentDisplayAreaOptions: { 
+					type: ContentDisplayAreaType.FILL 
+				},
 			});
 
 			// Set up renderers
