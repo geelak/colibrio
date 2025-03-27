@@ -11,22 +11,34 @@ if (typeof window !== 'undefined' && typeof URL.canParse !== 'function') {
 	};
 }
 
-import { useEffect, useRef, useState, Suspense } from 'react';
-import { useSearchParamsContext } from './contexts/SearchParamsProvider';
-import { ReadingSystemEngine } from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-engine';
-import { EpubFormatAdapter } from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-formatadapter-epub';
+import { useEffect, useRef, useState } from 'react';
+
+import { 
+	useSearchParamsContext 
+} from './contexts/SearchParamsProvider';
+
+import { 
+	ReadingSystemEngine 
+} from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-engine';
+
+import { 
+	EpubFormatAdapter 
+} from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-formatadapter-epub';
+
 import {
 	EpubOcfResourceProvider,
 } from '@colibrio/colibrio-reader-framework/colibrio-core-publication-epub';
+
 import {
 	FlipBookRenderer,
 	SingleDocumentScrollRenderer,
 } from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-renderer';
+
 import {
 	IReaderPublication,
 	IReaderView,
+	//ContentDisplayAreaType,
 } from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-base';
-
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +47,6 @@ export default function DemoReaderPage() {
 	const engineRef = useRef<ReadingSystemEngine>(null);
 	const readerViewRef = useRef<IReaderView>(null);
 	const publicationRef = useRef<IReaderPublication>(null);
-	const touchStartYRef = useRef<number>(0);
 
 	const [currentPage, setCurrentPage] = useState<number>();
 	const [totalPages, setTotalPages] = useState<number>();
@@ -56,12 +67,18 @@ export default function DemoReaderPage() {
 		let destroyed = false;
 		
 		const init = async () => {
+
 			const engine = new ReadingSystemEngine({
 				licenseApiKey: process.env.NEXT_PUBLIC_COLIBRIO_LICENSE_KEY || '',
 			});
+
 			engine.addFormatAdapter(new EpubFormatAdapter());
 
-			const readerView = engine.createReaderView();
+			const readerView = engine.createReaderView({
+				// contentDisplayAreaOptions: { 
+				// 	type: ContentDisplayAreaType.FILL 
+				// },
+			});
 
 			// Set up renderers
 			const scrollRenderer = new SingleDocumentScrollRenderer();
@@ -83,13 +100,9 @@ export default function DemoReaderPage() {
 			readerView.setOptions({
 				gestureOptions: {
 					swipeNavigation: {
-						// Set the threshold for swipe detection (in pixels)
 						pointerDragThresholdPx: 50,
-						// Configure which pointer types can trigger navigation
 						pointerTypes: {
-							// Enable touch navigation
 							touch: true,
-							// Enable mouse navigation
 							mouse: true
 						}
 					}
@@ -108,7 +121,9 @@ export default function DemoReaderPage() {
 			readerView.renderTo(containerRef.current!);
 
 			// Refresh layout on resize
-			window.addEventListener('resize', () => readerView.refresh());
+			window.addEventListener('resize', () => {
+				readerView.refresh();
+			});
 
 			engineRef.current = engine;
 			readerViewRef.current = readerView;
@@ -217,9 +232,21 @@ export default function DemoReaderPage() {
 
 	return (
 		<>
-			<div ref={containerRef} className="w-full h-screen bg-neutral-100 relative" />
+			{/* Make the container take up the full viewport */}
+			<div 
+				ref={containerRef} 
+				className="fixed inset-0 w-screen h-screen bg-neutral-100" 
+				style={{ 
+					width: '100vw',
+					height: '100vh',
+					position: 'relative',
+					padding: 0,
+					margin: 0,
+					overflow: 'hidden'
+				}}
+			/>
 
-			{/* Inline navigation bar */}
+			{/* Inline navigation bar - keep it at the bottom with z-index to stay above the reader */}
 			<div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur-md shadow-lg rounded-full px-6 py-2 flex items-center gap-4 z-50">
 				<button
 					onClick={() => {
