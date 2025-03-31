@@ -1,0 +1,143 @@
+{
+  "general": {
+    "transitionDuration": "300ms",
+    "transitionEasing": "ease-in-out",
+    "zIndex": 50,
+    "positionFromBottom": "1.5rem",
+    "holdDuration": 500,
+    "holdProgressThreshold": 100,
+    "vibrateOnAction": 20
+  },
+  "states": {
+    "collapsed": {
+      "padding": {
+        "x": "0.75rem",
+        "y": "0.125rem"
+      },
+      "dimensions": {
+        "minWidth": "60px",
+        "height": "24px",
+        "minHeight": "24px"
+      }
+    },
+    "expanded": {
+      "padding": {
+        "x": "1.5rem", 
+        "y": "0.625rem"
+      },
+      "dimensions": {
+        "width": "90%",
+        "maxWidth": "90%"
+      }
+    }
+  },
+  "appearance": {
+    "common": {
+      "borderRadius": "9999px",
+      "backdropBlur": "8px",
+      "backgroundColor": {
+        "light": "rgba(255, 255, 255, 0.75)",
+        "dark": "rgba(15, 23, 42, 0.75)"
+      },
+      "boxShadow": {
+        "standard": "var(--shadow-small)",
+        "active": "var(--shadow-large)"
+      }
+    },
+    "miniPill": {
+      "indicator": {
+        "dot": {
+          "size": "4px",
+          "color": "var(--color-text-secondary)",
+          "opacity": 0.5
+        },
+        "text": {
+          "fontSize": "xs",
+          "fontWeight": "medium",
+          "color": "var(--color-text-secondary)",
+          "activeColor": "var(--color-primary)"
+        }
+      },
+      "hoverEffect": {
+        "scale": 1.05,
+        "transformOrigin": "bottom center"
+      }
+    },
+    "expandedBar": {
+      "buttons": {
+        "iconSize": "18px",
+        "color": "var(--color-text-secondary)",
+        "hoverColor": "var(--color-text)",
+        "activeColor": "var(--color-primary)",
+        "disabledOpacity": 0.3,
+        "padding": "0.5rem"
+      },
+      "navigation": {
+        "iconSize": "16px",
+        "fontSize": "xs",
+        "buttonPadding": {
+          "x": "0.625rem",
+          "y": "0.125rem"
+        }
+      },
+      "divider": {
+        "width": "1px",
+        "height": "2rem",
+        "margin": "0 0.25rem",
+        "color": "var(--color-border)"
+      },
+      "slider": {
+        "width": "12rem",
+        "height": "0.5rem",
+        "backgroundColor": "var(--color-background-alt)",
+        "thumbColor": "var(--color-primary)"
+      }
+    }
+  },
+  "animations": {
+    "holdProgress": {
+      "pulseOpacity": {
+        "min": 0.15,
+        "max": 0.5
+      },
+      "scaleAmount": 1
+    },
+    "hintPulse": {
+      "opacity": 0.2,
+      "duration": "2s",
+      "iterations": 1
+    },
+    "pageChange": {
+      "pulseDuration": "1s",
+      "iterations": 1
+    },
+    "contentTransition": {
+      "initial": {
+        "scale": 0,
+        "opacity": 0
+      },
+      "visible": {
+        "scale": 1,
+        "opacity": 1
+      }
+    }
+  },
+  "accessibility": {
+    "ariaLabels": {
+      "accountSettings": "Account settings",
+      "readingOptions": "Reading options",
+      "tableOfContents": "Table of contents",
+      "search": "Search in book",
+      "previous": "Previous page",
+      "next": "Next page",
+      "darkMode": "Switch to light mode",
+      "lightMode": "Switch to dark mode",
+      "bookmark": "Bookmark this page"
+    },
+    "keyboardShortcuts": {
+      "toggleExpand": "Enter",
+      "previous": "ArrowLeft",
+      "next": "ArrowRight"
+    }
+  }
+} 

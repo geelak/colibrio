@@ -1,50 +1,110 @@
 @import "tailwindcss";
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+	/* Base light theme */
+	--color-background: #ffffff;
+	--color-background-rgb: 255, 255, 255;
+	--color-background-alt: #f1f5f9;
+	--color-text: #1e293b;
+	--color-text-secondary: #64748b;
+	--color-border: rgba(203, 213, 225, 0.4);
+	--color-primary: #5A21FB;
+	--color-primary-light: rgba(59, 130, 246, 0.2);
+	--shadow-small: 0 1px 3px rgba(0, 0, 0, 0.08);
+	--shadow-standard: 0 2px 6px rgba(0, 0, 0, 0.1);
+	--shadow-large: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Dark theme variables */
+html[data-theme="dark"] {
+	--color-background: #0f172a;
+	--color-background-rgb: 15, 23, 42;
+	--color-background-alt: #1e293b;
+	--color-text: #f1f5f9;
+	--color-text-secondary: #94a3b8;
+	--color-border: rgba(51, 65, 85, 0.6);
+	--color-primary: #71FFBB;
+	--color-primary-light: rgba(96, 165, 250, 0.2);
+	--shadow-small: 0 1px 3px rgba(0, 0, 0, 0.3);
+	--shadow-standard: 0 2px 6px rgba(0, 0, 0, 0.35);
+	--shadow-large: 0 4px 12px rgba(0, 0, 0, 0.45);
 }
 
+/* System preference based themes */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+	html[data-theme="system"] {
+		--color-background: #0f172a;
+		--color-background-rgb: 15, 23, 42;
+		--color-background-alt: #1e293b;
+		--color-text: #f1f5f9;
+		--color-text-secondary: #94a3b8;
+		--color-border: rgba(51, 65, 85, 0.6);
+		--color-primary: #71FFBB;
+		--color-primary-light: rgba(96, 165, 250, 0.2);
+		--shadow-small: 0 1px 3px rgba(0, 0, 0, 0.3);
+		--shadow-standard: 0 2px 6px rgba(0, 0, 0, 0.35);
+		--shadow-large: 0 4px 12px rgba(0, 0, 0, 0.45);
+	}
 }
 
-html, 
+@media (prefers-color-scheme: light) {
+	html[data-theme="system"] {
+		--color-background: #ffffff;
+		--color-background-rgb: 255, 255, 255;
+		--color-background-alt: #f1f5f9;
+		--color-text: #1e293b;
+		--color-text-secondary: #64748b;
+		--color-border: rgba(203, 213, 225, 0.4);
+		--color-primary: #5A21FB;
+		--color-primary-light: rgba(59, 130, 246, 0.2);
+		--shadow-small: 0 1px 3px rgba(0, 0, 0, 0.08);
+		--shadow-standard: 0 2px 6px rgba(0, 0, 0, 0.1);
+		--shadow-large: 0 4px 12px rgba(0, 0, 0, 0.15);
+	}
+}
+
+/* Smooth transitions for theme changes */
+html {
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 body {
-  height: 100vh;
-  width: 100vw;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+	color: var(--color-text);
+	background-color: var(--color-background);
+}
+
+/* Custom hover styles for UI elements */
+.hover\:text-text:hover {
+	color: var(--color-text) !important;
+}
+
+/* Animation for pulsing effect */
+@keyframes pulse-once {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.6; }
+}
+.animate-pulse-once {
+	animation: pulse-once 1s ease-in-out 1;
 }
 
 /* Add these styles to target Colibrio's iframe containers */
 .colibrio-renderer-runtime-container {
-  width: 100vh !important;
-  height: 100vw !important;
+	width: 100vh !important;
+	height: 100vw !important;
 }
 
 .colibrio-renderer-scrolled-document {
-  width: 100vw !important;
-  height: 100vh !important;
-  top: 0 !important;
-  left: 0 !important;
+	width: 100vw !important;
+	height: 100vh !important;
+	top: 0 !important;
+	left: 0 !important;
 }
 
 .colibrio-renderer-scrolled-document iframe {
-  width: 100vw !important;
-  height: 100vh !important;
+	width: 100vw !important;
+	height: 100vh !important;
 }

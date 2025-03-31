@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { SearchParamsProvider } from "./contexts/SearchParamsProvider";
+import { ClientThemeProvider } from "./contexts/theme/ThemeProvider";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -29,9 +31,13 @@ export default function RootLayout({
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased w-screen h-screen overflow-hidden`}
 			>
-				<SearchParamsProvider>
-					{children}
-				</SearchParamsProvider>
+				<Suspense fallback={<div className="theme-loading-fallback" />}>
+					<ClientThemeProvider>
+						<SearchParamsProvider>
+							{children}
+						</SearchParamsProvider>
+					</ClientThemeProvider>
+				</Suspense>
 			</body>
 		</html>
 	);
