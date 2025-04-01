@@ -14,7 +14,7 @@ export default function ReaderView() {
   return (
     <div className="relative w-full h-full">
       <Suspense fallback={<div className="w-full h-full bg-neutral-100" />}>
-        <Content />
+        <Content readerViewRef={readerViewRef} />
       </Suspense>
       
       <Suspense fallback={<div className="fixed bottom-6 left-0 right-0 flex justify-center" />}>

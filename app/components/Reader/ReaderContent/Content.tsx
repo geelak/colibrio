@@ -1,20 +1,25 @@
 'use client';
 
-import { forwardRef, ForwardedRef } from 'react';
+import { forwardRef, useEffect, useRef, ForwardedRef } from 'react';
 import type { IReaderView } from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-base';
 
-interface ContentProps {
+export interface ContentProps {
   readerViewRef: React.RefObject<IReaderView | null>;
 }
 
-const Content = forwardRef((
-  { readerViewRef }: ContentProps,
-  ref: ForwardedRef<HTMLDivElement>
-) => {
+const Content = forwardRef(({ 
+  readerViewRef 
+}: ContentProps, ref: ForwardedRef<HTMLDivElement>) => {
+  
+  useEffect(() => {
+    // Reader initialization will go here
+    // This is just a placeholder for now
+  }, []);
+
   return (
     <div 
       ref={ref}
-      className="fixed inset-0 w-screen h-screen bg-neutral-100"
+      className="w-full h-full bg-neutral-100"
       style={{
         width: '100vw',
         height: '100vh',
@@ -27,6 +32,7 @@ const Content = forwardRef((
   );
 });
 
+// Add displayName for better debugging
 Content.displayName = 'Content';
 
 export default Content; 
