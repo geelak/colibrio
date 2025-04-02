@@ -5,7 +5,7 @@ import "./globals.css";
 
 import { SearchParamsProvider } from "./contexts/SearchParamsProvider";
 import { ClientThemeProvider } from "./contexts/theme/ThemeProvider";
-import ViewportHeightFix from "./components/ViewportHeightFix";
+import ClientBody from './components/ClientBody';
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -17,7 +17,6 @@ const geistMono = Geist_Mono({
 	subsets: ["latin"],
 });
 
-// Metadata needs to be in a separate file for server component
 export const metadata: Metadata = {
 	title: "Legible Living Books: R&D Demo Environment",
 	description: "v0.1.8",
@@ -30,19 +29,22 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en">
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden w-screen h-screen`}
-			>
-				<Suspense fallback={<div className="theme-loading-fallback" />}>
+			<Suspense fallback={
+				<body className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden w-screen h-screen`}>
+					<div className="theme-loading-fallback" />
+				</body>
+			}>
+				<ClientBody 
+					geistSans={geistSans.variable} 
+					geistMono={geistMono.variable}
+				>
 					<ClientThemeProvider>
 						<SearchParamsProvider>
-							<ViewportHeightFix>
-								{children}
-							</ViewportHeightFix>
+							{children}
 						</SearchParamsProvider>
 					</ClientThemeProvider>
-				</Suspense>
-			</body>
+				</ClientBody>
+			</Suspense>
 		</html>
 	);
 }
