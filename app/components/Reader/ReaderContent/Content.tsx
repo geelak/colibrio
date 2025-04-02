@@ -12,9 +12,38 @@ const Content = forwardRef(({
 }: ContentProps, ref: ForwardedRef<HTMLDivElement>) => {
   
   useEffect(() => {
-    // Reader initialization will go here
-    // This is just a placeholder for now
-  }, []);
+    // Check container ref first
+    if (!(typeof ref === 'object' && ref?.current)) {
+      console.log('⚠️ Container ref not yet set');
+      return;
+    }
+    
+    // Log container ref success
+    console.log('✅ Container ref is set:', ref.current);
+
+    // Set up watcher for readerViewRef
+    const checkReaderView = () => {
+      if (readerViewRef?.current) {
+        console.log('✅ ReaderView ref is now set:', readerViewRef.current);
+        return true;
+      }
+      return false;
+    };
+
+    // Initial check
+    if (!checkReaderView()) {
+      console.log('ℹ️ Waiting for ReaderView to be initialized...');
+    }
+
+    // Watch for changes to readerViewRef
+    const interval = setInterval(() => {
+      if (checkReaderView()) {
+        clearInterval(interval);
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [ref, readerViewRef]);
 
   return (
     <div 

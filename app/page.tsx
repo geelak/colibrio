@@ -165,11 +165,10 @@ export default function DemoReaderPage() {
 
 	return (
 		<>
-			<Content 
+			<Content
 				ref={containerRef}
 				readerViewRef={readerViewRef}
 			/>
-
 			<UIBar
 				currentPage={currentPage}
 				totalPages={totalPages}
@@ -315,7 +314,7 @@ class ReaderInitializer {
 	 * @param visiblePageIndices Optional array of spine indices for currently visible pages
 	 */
 	private logRenderingMetadata(epubPublication: any, visiblePageIndices: number[] = []): void {
-		console.log('Building metadata table...', visiblePageIndices.length ? 
+		console.log('Building metadata table...', visiblePageIndices.length ?
 			`Focusing on spine indices: ${visiblePageIndices.join(', ')}` : 'Showing all pages');
 		console.groupCollapsed('%c📘 EPUB Rendering Metadata', 'color: cyan; font-weight: bold');
 
@@ -342,11 +341,11 @@ class ReaderInitializer {
 			const spineItems = epubPublication.getSpine?.();
 			if (spineItems) {
 				console.groupCollapsed('📚 Spine Items');
-				
+
 				// If we have visible page indices, highlight those items
 				if (visiblePageIndices.length > 0) {
 					console.log('%c📌 Currently Visible Pages:', 'color: green; font-weight: bold');
-					
+
 					// First log the visible pages with more details
 					visiblePageIndices.forEach((index: number) => {
 						if (index >= 0 && index < spineItems.length) {
@@ -390,7 +389,7 @@ class ReaderInitializer {
 						}
 					});
 				}
-				
+
 				// Then log all spine items (or just summarize if too many)
 				if (spineItems.length > 20 && !visiblePageIndices.length) {
 					console.log(`Total spine items: ${spineItems.length} (Too many to display all, showing only visible or first few)`);
@@ -409,11 +408,11 @@ class ReaderInitializer {
 						if (visiblePageIndices.includes(index)) {
 							return;
 						}
-						
+
 						const href = item.getContentUrl?.()?.href || item.href;
 						const layout = item.getLayout?.();
 						const spread = item.getSyntheticSpreadBehavior?.();
-						
+
 						console.log(`🔹 Spine #${index}: ${href}`);
 						console.table({
 							layout,
@@ -448,7 +447,6 @@ class ReaderInitializer {
 	private setupReaderView(): void {
 		// Create reader view with options potentially influenced by metadata
 		this.readerView = this.engine.createReaderView({
-			// @ts-ignore
 			contentDisplayAreaOptions: {
 				type: ContentDisplayAreaType.FILL
 			},
@@ -514,7 +512,10 @@ class ReaderInitializer {
 			const userToken = userId;
 			const publicationToken = this.epubPublication.getHashSignature();
 
-			// Configure publication options based on metadata
+			// Test with a simpler CSS structure
+			const cssRules = this.getCustomCss();
+			console.log('CSS Rules to be injected:', cssRules);
+
 			const epubPublicationOptions: IEpubReaderPublicationOptions = {
 				allowDocumentScripting: true,
 				remoteResourcesNonScriptedDocumentsOptions: {
@@ -524,16 +525,21 @@ class ReaderInitializer {
 					policyType: EpubRemoteResourcePolicyType.ALLOW_ALL,
 				},
 				customPublicationCss: {
-					injectionPointEnd: this.getCustomCss()
+					injectionPointStart: cssRules,
+					injectionPointEnd: cssRules
 				},
 				enableMediaStreaming: true,
 			};
 
+			console.log('Full publication options:', epubPublicationOptions);
+
 			const publication = await this.engine.loadPublication(
 				this.epubPublication,
-				{ ...epubPublicationOptions },
+				epubPublicationOptions,
 				{ userToken, publicationToken }
 			);
+
+			console.log('Publication loaded, checking if CSS was applied');
 
 			this.publication = publication;
 			this.readerView?.setReaderDocuments(publication.getSpine());
@@ -544,7 +550,7 @@ class ReaderInitializer {
 			setTimeout(() => {
 				const timeline = this.readerView?.getPageProgressionTimeline();
 				if (!timeline) return;
-				
+
 				// Get the current page and total pages
 				const range = timeline.getVisibleTimelineRange();
 				this.setCurrentPage(range.start.pageIndex + 1);
@@ -553,10 +559,13 @@ class ReaderInitializer {
 				// Check navigation capabilities
 				this.setCanGoNext(this.readerView!.canPerformNext());
 				this.setCanGoPrev(this.readerView!.canPerformPrevious());
-				
+
 				// Log API method names for debugging
 				console.log('Available timeline methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(timeline)));
 			}, 100);
+
+			// After loading, verify CSS application
+			console.log('Publication loaded, CSS should be applied');
 		} catch (error) {
 			console.error('Error loading EPUB into reader:', error);
 			throw error;
@@ -567,26 +576,36 @@ class ReaderInitializer {
 	 * Generate custom CSS based on metadata.
 	 */
 	private getCustomCss(): string[] {
-		const cssRules = ['/* Base custom CSS */'];
-
-		// Add metadata-specific CSS
-		if (this.metadata.layout === 'fixed') {
-			cssRules.push('/* Fixed layout specific styles */');
-		}
-
-		if (this.metadata.direction === 'rtl') {
-			cssRules.push('/* RTL specific styles */');
-		}
-
-		return cssRules;
+		return [
+			'div[role="document"] { width: 100% !important; height: 100% !important; }',
+			'.colibrio-renderer-runtime-container { width: 100% !important; height: 100% !important; }',
+			'body.colibrio-reflowable-content { column-count: 1 !important; overflow-y: auto !important; }',
+			'.colibrio-renderer-scrolled-document { overflow-y: auto !important; height: 100% !important; }',
+			'.colibrio-content-document { column-count: 1 !important; column-width: auto !important; }',
+		];
 	}
 
 	/**
 	 * Renders the reader view to the DOM.
 	 */
 	private renderToDOM(): void {
+
 		if (this.readerView) {
 			this.readerView.renderTo(this.container);
+
+			const setIframeScrolling = () => {
+				const iframes = this.container.querySelectorAll('iframe');
+				if (iframes.length) {
+					iframes.forEach(iframe => {
+						console.log('iframe.getAttribute(scrolling):', iframe.getAttribute('scrolling'));
+						iframe.setAttribute('scrolling', 'yes');
+						console.log('iframe scrolling attribute set to yes');
+					});
+				}
+			}
+
+			// Initial call to set the iframe scrolling
+			setIframeScrolling();
 
 			// Log the active renderer initially
 			console.log('Initial Active Renderer:', this.readerView.getActiveRenderer()?.getName());
@@ -618,6 +637,9 @@ class ReaderInitializer {
 					} else {
 						console.error('logRenderingMetadata is not a function:', self.logRenderingMetadata);
 					}
+
+					// Ensure iframe scrolling attribute remains set after refresh
+					setIframeScrolling();
 				} else {
 					console.error('readerView is null during resize event');
 				}
@@ -646,8 +668,11 @@ class ReaderInitializer {
 						});
 						console.log("Visible spine indices:", pageIndices);
 					}
-					
+
 					this.logRenderingMetadata(this.epubPublication, pageIndices);
+
+					// Ensure iframe scrolling attribute remains set after refresh
+					setIframeScrolling();
 				});
 			}
 		}
