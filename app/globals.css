@@ -70,11 +70,14 @@ html[data-theme="dark"] {
 /* Smooth transitions for theme changes */
 html {
 	transition: background-color 0.3s ease, color 0.3s ease;
+	height: var(--visibleVH, 100vh) !important;
+	overflow: hidden;
 }
 
 body {
 	color: var(--color-text);
 	background-color: var(--color-background);
+	height: var(--visibleVH, 100vh) !important;
 }
 
 /* Custom hover styles for UI elements */
