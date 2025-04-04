@@ -94,6 +94,15 @@ body {
 	animation: pulse-once 1s ease-in-out 1;
 }
 
+.full-screen-container {
+	width: 100vw !important;
+	height: var(--visibleVH, 100vw) !important;
+	position: relative;
+	padding: 0 !important;
+	margin: 0 !important;
+	overflow: hidden;
+}
+
 /* Add these styles to target Colibrio's iframe containers */
 .colibrio-renderer-runtime-container {
 	width: 100vw !important;

@@ -48,15 +48,7 @@ const Content = forwardRef(({
   return (
     <div 
       ref={ref}
-      className="w-full h-full bg-neutral-100"
-      style={{
-        width: '100vw',
-        height: '100vh',
-        position: 'relative',
-        padding: 0,
-        margin: 0,
-        overflow: 'hidden'
-      }}
+      className="w-full h-full bg-neutral-100 full-screen-container"
     />
   );
 });
