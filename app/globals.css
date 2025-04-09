@@ -70,14 +70,14 @@ html[data-theme="dark"] {
 /* Smooth transitions for theme changes */
 html {
 	transition: background-color 0.3s ease, color 0.3s ease;
-	height: var(--visibleVH, 100vh) !important;
-	overflow: hidden;
+	/* width: 100vw !important; */
+	/* height: var(--visibleVH, 100vh) !important; */
 }
 
 body {
 	color: var(--color-text);
 	background-color: var(--color-background);
-	height: var(--visibleVH, 100vh) !important;
+	/* height: var(--visibleVH, 100vh) !important; */
 }
 
 /* Custom hover styles for UI elements */
@@ -87,51 +87,111 @@ body {
 
 /* Animation for pulsing effect */
 @keyframes pulse-once {
-	0%, 100% { opacity: 1; }
-	50% { opacity: 0.6; }
+
+	0%,
+	100% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0.6;
+	}
 }
+
 .animate-pulse-once {
 	animation: pulse-once 1s ease-in-out 1;
 }
 
 .full-screen-container {
-	width: 100vw !important;
-	height: var(--visibleVH, 100vw) !important;
+	/* width: 100vw !important;
+	height: var(--visibleVH, 100vh) !important;
 	position: relative;
 	padding: 0 !important;
 	margin: 0 !important;
-	overflow: hidden;
+	overflow: hidden; */
 }
 
 /* Add these styles to target Colibrio's iframe containers */
 .colibrio-renderer-runtime-container {
 	width: 100vw !important;
-	height: var(--visibleVH, 100vw) !important;
+	height: var(--visibleVH, 100vh) !important;
 }
 
 .colibrio-renderer-scrolled-document {
-	width: 100vw !important;
+	/* width: 100vw !important;
 	height: var(--visibleVH, 100vh) !important;
 	top: 0 !important;
-	left: 0 !important;
+	left: 0 !important; */
 }
 
 .colibrio-renderer-scrolled-document iframe {
-	width: 100vw !important;
-	height: var(--visibleVH, 100vh) !important;
+	/* width: 100vw !important;
+	height: var(--visibleVH, 100vh) !important; */
 }
 
-div[role="document"] { 
-	padding: 0 !important; 
-	margin: 0 !important; 
+div[role="document"] {
+	padding: 0 !important;
+	margin: 0 !important;
 }
 
-div[role="article"] { 
-	padding: 0 !important; 
-	margin: 0 !important; 
+div[role="article"] {
+	padding: 0 !important;
+	margin: 0 !important;
 }
 
-iframe[data-colibrio-iframe-scale-factor] { 
-	overflow-y: auto !important; 
-	-webkit-overflow-scrolling: touch !important; 
+iframe[data-colibrio-iframe-scale-factor] {
+	overflow-y: auto !important;
+	-webkit-overflow-scrolling: touch !important;
+	touch-action: manipulation !important;
+	pointer-events: auto !important;
+	position: relative !important;
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+	iframe[data-colibrio-iframe-scale-factor] {
+		overflow-y: scroll !important;
+		-webkit-overflow-scrolling: touch !important;
+	}
+	.colibrio-renderer-scrolled-document {
+		overflow-y: auto !important;
+		-webkit-overflow-scrolling: touch !important;
+	}
+}
+
+html,
+html body,
+html body .full-screen-container,
+html body .full-screen-container .colibrio-renderer-runtime-container,
+html body .full-screen-container div[role="article"],
+html body .full-screen-container div[role="document"] {
+	overflow: visible !important;
+}
+
+/* Prevent pull-to-refresh on mobile browsers */
+html, body {
+	overscroll-behavior-y: none;
+	overscroll-behavior: none;
+	-webkit-overflow-scrolling: touch;
+}
+
+/* Version indicator for CSS updates */
+.css-version-indicator {
+	display: block;
+	display: none;
+	position: fixed;
+	top: 10px;
+	right: 10px;
+	background-color: var(--color-background);
+	color: var(--color-text);
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+	z-index: 9999;
+	opacity: 0.8;
+	pointer-events: none;
+}
+
+.css-version-indicator::after {
+	content: 'v1.17';
 }

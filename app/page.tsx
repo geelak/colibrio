@@ -338,102 +338,102 @@ class ReaderInitializer {
 			});
 
 			// 2. Spine items
-			const spineItems = epubPublication.getSpine?.();
-			if (spineItems) {
-				console.groupCollapsed('📚 Spine Items');
+			// const spineItems = epubPublication.getSpine?.();
+			// if (spineItems) {
+			// 	console.groupCollapsed('📚 Spine Items');
 
-				// If we have visible page indices, highlight those items
-				if (visiblePageIndices.length > 0) {
-					console.log('%c📌 Currently Visible Pages:', 'color: green; font-weight: bold');
+			// 	// If we have visible page indices, highlight those items
+			// 	if (visiblePageIndices.length > 0) {
+			// 		console.log('%c📌 Currently Visible Pages:', 'color: green; font-weight: bold');
 
-					// First log the visible pages with more details
-					visiblePageIndices.forEach((index: number) => {
-						if (index >= 0 && index < spineItems.length) {
-							const item = spineItems[index];
-							const href = item.getContentUrl?.()?.href || item.href;
-							const layout = item.getLayout?.();
-							const spread = item.getSyntheticSpreadBehavior?.();
-							const scripted = item.isScripted?.();
-							const hasRemote = item.hasRemoteResources?.();
-							const linear = item.isInLinearContent?.();
-							const pageSlot = item.getPageSpreadSlot?.();
-							const mediaType = item.getMediaType?.();
+			// 		// First log the visible pages with more details
+			// 		visiblePageIndices.forEach((index: number) => {
+			// 			if (index >= 0 && index < spineItems.length) {
+			// 				const item = spineItems[index];
+			// 				const href = item.getContentUrl?.()?.href || item.href;
+			// 				const layout = item.getLayout?.();
+			// 				const spread = item.getSyntheticSpreadBehavior?.();
+			// 				const scripted = item.isScripted?.();
+			// 				const hasRemote = item.hasRemoteResources?.();
+			// 				const linear = item.isInLinearContent?.();
+			// 				const pageSlot = item.getPageSpreadSlot?.();
+			// 				const mediaType = item.getMediaType?.();
 
-							let propertiesAttr = undefined;
-							let manifestAttrs = undefined;
-							let itemrefAttrs = undefined;
+			// 				let propertiesAttr = undefined;
+			// 				let manifestAttrs = undefined;
+			// 				let itemrefAttrs = undefined;
 
-							try {
-								propertiesAttr = item.getOpfSpineItemElement?.()?.getAttribute('properties');
-								manifestAttrs = item.getOpfManifestItemElement?.()?.attributes;
-								itemrefAttrs = item.getOpfSpineItemElement?.()?.attributes;
-							} catch (err) {
-								console.warn('Raw OPF access error on item', index, err);
-							}
+			// 				try {
+			// 					propertiesAttr = item.getOpfSpineItemElement?.()?.getAttribute('properties');
+			// 					manifestAttrs = item.getOpfManifestItemElement?.()?.attributes;
+			// 					itemrefAttrs = item.getOpfSpineItemElement?.()?.attributes;
+			// 				} catch (err) {
+			// 					console.warn('Raw OPF access error on item', index, err);
+			// 				}
 
-							console.log(`%c🔸 Visible Spine #${index}: ${href}`, 'color: green; font-weight: bold');
-							console.table({
-								layout,
-								spread,
-								linear,
-								pageSlot,
-								scripted,
-								hasRemote,
-								mediaType,
-								propertiesAttr,
-								manifestAttrs,
-								itemrefAttrs,
-							});
-						} else {
-							console.warn(`Invalid spine index: ${index}`);
-						}
-					});
-				}
+			// 				console.log(`%c🔸 Visible Spine #${index}: ${href}`, 'color: green; font-weight: bold');
+			// 				console.table({
+			// 					layout,
+			// 					spread,
+			// 					linear,
+			// 					pageSlot,
+			// 					scripted,
+			// 					hasRemote,
+			// 					mediaType,
+			// 					propertiesAttr,
+			// 					manifestAttrs,
+			// 					itemrefAttrs,
+			// 				});
+			// 			} else {
+			// 				console.warn(`Invalid spine index: ${index}`);
+			// 			}
+			// 		});
+			// 	}
 
-				// Then log all spine items (or just summarize if too many)
-				if (spineItems.length > 20 && !visiblePageIndices.length) {
-					console.log(`Total spine items: ${spineItems.length} (Too many to display all, showing only visible or first few)`);
-					// Show first few items for reference
-					for (let i = 0; i < 3; i++) {
-						if (i < spineItems.length) {
-							const item = spineItems[i];
-							const href = item.getContentUrl?.()?.href || item.href;
-							console.log(`🔹 Spine #${i}: ${href}`);
-						}
-					}
-				} else {
-					// Show all items or at least the non-visible ones more concisely
-					spineItems.forEach((item: any, index: number) => {
-						// Skip detailed logging for items we already showed above
-						if (visiblePageIndices.includes(index)) {
-							return;
-						}
+			// 	// Then log all spine items (or just summarize if too many)
+			// 	if (spineItems.length > 20 && !visiblePageIndices.length) {
+			// 		console.log(`Total spine items: ${spineItems.length} (Too many to display all, showing only visible or first few)`);
+			// 		// Show first few items for reference
+			// 		for (let i = 0; i < 3; i++) {
+			// 			if (i < spineItems.length) {
+			// 				const item = spineItems[i];
+			// 				const href = item.getContentUrl?.()?.href || item.href;
+			// 				console.log(`🔹 Spine #${i}: ${href}`);
+			// 			}
+			// 		}
+			// 	} else {
+			// 		// Show all items or at least the non-visible ones more concisely
+			// 		spineItems.forEach((item: any, index: number) => {
+			// 			// Skip detailed logging for items we already showed above
+			// 			if (visiblePageIndices.includes(index)) {
+			// 				return;
+			// 			}
 
-						const href = item.getContentUrl?.()?.href || item.href;
-						const layout = item.getLayout?.();
-						const spread = item.getSyntheticSpreadBehavior?.();
+			// 			const href = item.getContentUrl?.()?.href || item.href;
+			// 			const layout = item.getLayout?.();
+			// 			const spread = item.getSyntheticSpreadBehavior?.();
 
-						console.log(`🔹 Spine #${index}: ${href}`);
-						console.table({
-							layout,
-							spread,
-						});
-					});
-				}
-				console.groupEnd();
-			}
+			// 			console.log(`🔹 Spine #${index}: ${href}`);
+			// 			console.table({
+			// 				layout,
+			// 				spread,
+			// 			});
+			// 		});
+			// 	}
+			// 	console.groupEnd();
+			// }
 
 			// 3. Raw OPF dump
-			try {
-				const opf = epubPublication.getOpfDocument?.();
-				if (opf) {
-					console.groupCollapsed('📦 Raw OPF Document');
-					console.log(opf);
-					console.groupEnd();
-				}
-			} catch (err) {
-				console.warn('Could not access OPF document:', err);
-			}
+			// try {
+			// 	const opf = epubPublication.getOpfDocument?.();
+			// 	if (opf) {
+			// 		console.groupCollapsed('📦 Raw OPF Document');
+			// 		console.log(opf);
+			// 		console.groupEnd();
+			// 	}
+			// } catch (err) {
+			// 	console.warn('Could not access OPF document:', err);
+			// }
 		} catch (err) {
 			console.error('Error during EPUB metadata diagnostics:', err);
 		}
@@ -597,9 +597,11 @@ class ReaderInitializer {
 				const iframes = this.container.querySelectorAll('iframe');
 				if (iframes.length) {
 					iframes.forEach(iframe => {
-						console.log('iframe.getAttribute(scrolling):', iframe.getAttribute('scrolling'));
 						iframe.setAttribute('scrolling', 'yes');
-						console.log('iframe scrolling attribute set to yes');
+						iframe.style.overflowY = 'auto';
+						(iframe.style as any).webkitOverflowScrolling = 'touch';
+						iframe.style.touchAction = 'manipulation';
+						iframe.style.pointerEvents = 'auto';
 					});
 				}
 			}

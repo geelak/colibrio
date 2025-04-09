@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -22,6 +22,14 @@ export const metadata: Metadata = {
 	description: "v0.1.8",
 };
 
+export const viewport: Viewport = {
+	width: 'device-width',
+	initialScale: 1,
+	maximumScale: 1,
+	userScalable: false,
+	interactiveWidget: 'resizes-visual',
+  }
+
 export default function RootLayout({
 	children,
 }: Readonly<{
@@ -30,16 +38,18 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<Suspense fallback={
-				<body className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden w-screen h-screen`}>
+				<body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
 					<div className="theme-loading-fallback" />
 				</body>
 			}>
-				<ClientBody 
-					geistSans={geistSans.variable} 
+				<ClientBody
+					geistSans={geistSans.variable}
 					geistMono={geistMono.variable}
 				>
 					<ClientThemeProvider>
 						<SearchParamsProvider>
+							{/* CSS Version Indicator */}
+							<div className="css-version-indicator"></div>
 							{children}
 						</SearchParamsProvider>
 					</ClientThemeProvider>

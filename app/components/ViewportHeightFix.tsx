@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import logger from "@/utils/logger";
 
 interface ViewportHeightFixProps {
 	children: React.ReactNode;
@@ -23,19 +24,33 @@ export function use100vh(): number | null {
 			const clientHeight = document.documentElement?.clientHeight;
 			const innerHeight = window.innerHeight;
 
-			console.log('visualViewportHeight:', visualViewportHeight);
-			console.log('clientHeight:', clientHeight);
-			console.log('innerHeight:', innerHeight);
+			// Log height measurements to remote server
+			logger.info("Viewport measurements", {
+				visualViewportHeight,
+				clientHeight,
+				innerHeight,
+				userAgent: navigator.userAgent,
+				orientation: window.screen?.orientation?.type || "unknown",
+				screenWidth: window.screen?.width,
+				screenHeight: window.screen?.height,
+				devicePixelRatio: window.devicePixelRatio
+			});
 
 			const windowHeight =
 				(window.visualViewport?.height) ||
 				document.documentElement?.clientHeight ||
 				window.innerHeight;
 
-
 			setHeight(windowHeight);
 			// Update the module-level variable
 			currentVH = windowHeight;
+			
+			// Log the selected height
+			logger.debug("Selected viewport height", { 
+				selectedHeight: windowHeight,
+				source: windowHeight === visualViewportHeight ? "visualViewport" : 
+						windowHeight === clientHeight ? "clientHeight" : "innerHeight"
+			});
 		};
 
 		// Set initial value
@@ -76,15 +91,16 @@ export default function ViewportHeightFix({ children }: ViewportHeightFixProps) 
 	// Set viewport height CSS variable
 	useEffect(() => {
 		const setViewportHeight = () => {
-			// Use the most accurate API with fallbacks
-
 			const visualViewportHeight = window.visualViewport?.height;
 			const clientHeight = document.documentElement?.clientHeight;
 			const innerHeight = window.innerHeight;
 
-			console.log('visualViewportHeight:', visualViewportHeight);
-			console.log('clientHeight:', clientHeight);
-			console.log('innerHeight:', innerHeight);
+			// Log measurements from ViewportHeightFix component
+			logger.info("ViewportHeightFix component measurements", {
+				visualViewportHeight,
+				clientHeight,
+				innerHeight,
+			});
 
 			const height =
 				(window.visualViewport?.height) ||
@@ -94,6 +110,13 @@ export default function ViewportHeightFix({ children }: ViewportHeightFixProps) 
 			// Set the custom property
 			const vh = height * 0.01;
 			document.documentElement.style.setProperty('--vh', `${vh}px`);
+			
+			// Log the CSS variable setting
+			logger.debug("ViewportHeightFix set CSS variable", { 
+				height,
+				vh: `${vh}px`,
+				cssVar: '--vh'
+			});
 		};
 
 		// Set initial value
@@ -110,6 +133,11 @@ export default function ViewportHeightFix({ children }: ViewportHeightFixProps) 
 
 		// Update on any orientation change
 		window.addEventListener('orientationchange', () => {
+			// Log orientation change
+			logger.info("Orientation change detected", {
+				orientation: window.screen?.orientation?.type || "unknown"
+			});
+			
 			// Slight delay to ensure values are updated
 			setTimeout(setViewportHeight, 100);
 		});
