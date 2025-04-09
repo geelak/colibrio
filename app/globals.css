@@ -193,5 +193,5 @@ html, body {
 }
 
 .css-version-indicator::after {
-	content: 'v1.17';
+	content: 'css v1.17';
 }

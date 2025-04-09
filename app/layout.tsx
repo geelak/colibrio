@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
 	title: "Legible Living Books: R&D Demo Environment",
-	description: "v0.1.8",
+	description: "v0.2.0",
 };
 
 export const viewport: Viewport = {
