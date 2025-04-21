@@ -57,6 +57,7 @@ import CollapsibleUIBar from './old/CollapsibleUIBar';
 // Update imports to use new component structure
 import UIBar from '@/components/Reader/ReaderUI/UIBar';
 import Content from '@/components/Reader/ReaderContent/Content';
+import TableOfContents from '@/components/Reader/ReaderUI/TableOfContents';
 
 // Export dynamic setting for Next.js
 export const dynamic = 'force-dynamic';
@@ -80,6 +81,7 @@ export default function DemoReaderPage() {
 	const [readerView, setReaderView] = useState<IReaderView | null>(null);
 	const [epubUrl, setEpubUrl] = useState<string | null>(null);
 	const [epubFile, setEpubFile] = useState<File | null>(null);
+	const [showTOC, setShowTOC] = useState(false);
 
 	// Get search parameters from context
 	const searchParams = useSearchParamsContext();
@@ -197,7 +199,15 @@ export default function DemoReaderPage() {
 				canGoNext={canGoNext}
 				canGoPrev={canGoPrev}
 				readerViewRef={readerViewRef}
+				onTOCClick={() => setShowTOC(true)}
 			/>
+			{showTOC && (
+				<TableOfContents
+					readerPublication={publicationRef.current}
+					readerView={readerViewRef.current}
+					onClose={() => setShowTOC(false)}
+				/>
+			)}
 		</>
 	);
 }

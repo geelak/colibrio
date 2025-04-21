@@ -15,8 +15,8 @@ export function ClientThemeProvider({ children }: { children: React.ReactNode })
     const savedTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    // Set initial dark mode state
-    setIsDark(savedTheme === 'dark' || (savedTheme !== 'light' && systemPrefersDark));
+    // Set initial dark mode state: default to dark if no saved theme
+    setIsDark(savedTheme === 'dark' || savedTheme === null);
 
     // Add system theme change listener
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');

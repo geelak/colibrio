@@ -14,6 +14,9 @@ import { ContentContainer } from './controls/ContentContainer';
 import { Overlay } from './controls/Overlay';
 import { Divider } from './controls/Divider';
 import { ButtonGroup } from './controls/ButtonGroup';
+import { PreviousButton } from './controls/PreviousButton';
+import { TOCButton } from './controls/TOCButton';
+import { NextButton } from './controls/NextButton';
 
 // Vibration utility
 const vibrate = (pattern: number | number[]) => {
@@ -26,12 +29,21 @@ const vibrate = (pattern: number | number[]) => {
   }
 };
 
+// Utility to detect touch device
+const isTouchDevice = () => {
+  return typeof window !== 'undefined' && (
+    'ontouchstart' in window ||
+    (navigator && navigator.maxTouchPoints > 0)
+  );
+};
+
 export default function ClientUIBar({ 
   currentPage, 
   totalPages, 
   canGoNext, 
   canGoPrev, 
-  readerViewRef 
+  readerViewRef, 
+  onTOCClick
 }: UIBarProps) {
   // Theme context
   const { isLoaded } = useTheme();
@@ -43,11 +55,13 @@ export default function ClientUIBar({
   const [showPageInfo, setShowPageInfo] = useState(false);
   const [isInteractionLocked, setIsInteractionLocked] = useState(false);
   const [showContent, setShowContent] = useState(false);
-  const [holdProgress, setHoldProgress] = useState(0);
   const [showPageChangeIndicator, setShowPageChangeIndicator] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [activeTool, setActiveTool] = useState<'toc' | 'search' | 'settings' | 'account' | null>(null);
   const [isBarHovered, setIsBarHovered] = useState(false);
+  // Use ref for holdProgress to avoid excessive re-renders
+  const holdProgressRef = useRef(0);
+  const [holdProgress, setHoldProgress] = useState(0);
   
   // Refs
   const barRef = useRef<HTMLDivElement>(null);
@@ -126,22 +140,19 @@ export default function ClientUIBar({
     return () => clearTimeout(hintTimer);
   }, []);
   
-  // Function to update hold progress animation
+  // Function to update hold progress animation (optimized)
   const updateHoldProgress = () => {
     if (!holdStartTimeRef.current) return;
-    
     const elapsed = Date.now() - holdStartTimeRef.current;
-    // Adjust the progress calculation to make the visual fill slightly ahead
-    // Multiply by 1.1 (110%) to ensure it reaches 100% before activation
     const progress = Math.min(100, (elapsed / longPressDuration) * 110);
-    
-    setHoldProgress(progress);
-    
+    // Only update state if changed by at least 1%
+    if (Math.abs(progress - holdProgressRef.current) >= 1) {
+      holdProgressRef.current = progress;
+      setHoldProgress(progress);
+    }
     if (progress < 100) {
-      // Continue animation until complete
       animationFrameRef.current = requestAnimationFrame(updateHoldProgress);
     } else {
-      // Small vibration on completion for tactile feedback
       vibrate(25);
     }
   };
@@ -155,6 +166,7 @@ export default function ClientUIBar({
   const handleTOC = (e: React.MouseEvent) => {
     setActiveTool(activeTool === 'toc' ? null : 'toc');
     vibrate(20);
+    if (onTOCClick) onTOCClick();
   };
 
   const handleSearch = (e: React.MouseEvent) => {
@@ -174,62 +186,41 @@ export default function ClientUIBar({
 
   // Clean up function
   const cleanup = () => {
-    // Reset hold animation
     holdStartTimeRef.current = null;
+    holdProgressRef.current = 0;
     setHoldProgress(0);
-    
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
-    
-    // Clear the timer
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    
-    // Reset long press state (but keep expanded state if it was expanded)
     setLongPressActive(false);
   };
   
-  // Handle start of press/touch with a check for nav button clicks
-  const handlePressStart = (e: React.MouseEvent | React.TouchEvent) => {
-    // Prevent default to avoid selection issues on mobile
-    e.preventDefault();
-    
-    // Don't start new interactions if locked
+  // Unified pointer/touch event handlers
+  const handlePressStart = (e: React.PointerEvent | React.TouchEvent) => {
+    // Only preventDefault for mouse, not for touch (to avoid blocking scroll)
+    if (!('touches' in e)) e.preventDefault();
     if (isInteractionLocked) return;
-    
-    // Don't start long press if this was a navigation button click
-    // We'll check this with a small delay to allow the nav button to be pressed
     if (navButtonClickedRef.current) return;
-    
-    // Set start time for progress animation
     holdStartTimeRef.current = Date.now();
-    
-    // Start progress animation
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
+    holdProgressRef.current = 0;
     setHoldProgress(0);
     animationFrameRef.current = requestAnimationFrame(updateHoldProgress);
-    
-    // Initial "tap" vibration
     vibrate(10);
-    
-    // Clear any existing timer
     if (timerRef.current) {
       clearTimeout(timerRef.current);
     }
-    
-    // Set a new timer for long press
     timerRef.current = setTimeout(() => {
       setLongPressActive(true);
       setIsExpanded(true);
-      setShowHint(false); // Hide the hint after first successful expand
-      
-      // Lock interactions during and shortly after animation
+      setShowHint(false);
       setIsInteractionLocked(true);
       if (lockTimerRef.current) clearTimeout(lockTimerRef.current);
       lockTimerRef.current = setTimeout(() => {
@@ -237,8 +228,7 @@ export default function ClientUIBar({
       }, interactionLockTime);
     }, longPressDuration);
   };
-  
-  // Handle end of press/touch
+
   const handlePressEnd = () => {
     cleanup();
   };
@@ -271,14 +261,14 @@ export default function ClientUIBar({
   };
   
   // Enhanced hover handlers
-  const handleMouseEnter = () => {
+  const handlePointerEnter = () => {
     if (!isExpanded && !isInteractionLocked) {
       setShowPageInfo(true);
       setIsBarHovered(true);
     }
   };
 
-  const handleMouseLeave = () => {
+  const handlePointerLeave = () => {
     if (!isExpanded) {
       setShowPageInfo(false);
       setIsBarHovered(false);
@@ -396,13 +386,16 @@ export default function ClientUIBar({
           longPressActive={longPressActive}
           showHint={showHint}
           holdProgress={holdProgress}
-          onMouseDown={handlePressStart}
-          onMouseUp={handlePressEnd}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          onTouchStart={handlePressStart}
-          onTouchEnd={handlePressEnd}
+          onPointerDown={!isTouchDevice() ? handlePressStart : undefined}
+          onPointerUp={!isTouchDevice() ? handlePressEnd : undefined}
+          onPointerEnter={handlePointerEnter}
+          onPointerLeave={handlePointerLeave}
           onClick={handleClick}
+          // Add touch handlers for mobile
+          {...(isTouchDevice() ? {
+            onTouchStart: handlePressStart,
+            onTouchEnd: handlePressEnd
+          } : {})}
         >
           {!isExpanded ? (
             /* Collapsed state - pill with page indicator and now nav buttons on hover */
@@ -418,42 +411,26 @@ export default function ClientUIBar({
               onNext={handleNextPage}
             />
           ) : (
-            /* Expanded state - full control bar */
+            /* Expanded state - custom minimal control bar */
             <ContentContainer showContent={showContent}>
-              <ButtonGroup 
-                onBookmark={handleBookmark}
-                onTOC={handleTOC}
-                onSearch={handleSearch}
-                onSettings={handleSettings}
-                onAccount={handleAccount}
-                isBookmarked={isBookmarked}
-                activeTool={activeTool}
-              />
-              
-              <Divider />
-              
-              <NavigationControls 
-                canGoPrev={canGoPrev}
-                canGoNext={canGoNext}
-                onPrev={handlePrevPage}
-                onNext={handleNextPage}
-              />
-              
-              <PageIndicator 
-                currentPage={currentPage}
-                totalPages={totalPages}
-                showIndicator={true}
-              />
-              
+              {/* Theme toggle on the far left */}
+              <ThemeToggle onToggle={() => vibrate(20)} />
+
+              {/* Left arrow */}
+              <PreviousButton onClick={handlePrevPage} disabled={!canGoPrev} />
+
+              {/* Menu bar (TOC) in the center */}
+              <TOCButton onClick={handleTOC} isActive={activeTool === 'toc'} />
+
+              {/* Right arrow */}
+              <NextButton onClick={handleNextPage} disabled={!canGoNext} />
+
+              {/* Progress bar on the far right */}
               <ProgressBar 
                 currentPage={currentPage || 1}
                 totalPages={totalPages || 100}
                 onPageChange={handlePageChange}
               />
-              
-              <Divider />
-              
-              <ThemeToggle onToggle={() => vibrate(20)} />
             </ContentContainer>
           )}
         </BarContainer>

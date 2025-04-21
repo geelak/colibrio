@@ -15,7 +15,7 @@ export const ContentContainer: React.FC<ContentContainerProps> = ({
 
   return (
     <div 
-      className={`flex items-center gap-4 w-full transition-all duration-300 ease-in-out origin-center ${contentAnimationClass}`}
+      className={`flex items-center justify-center gap-4 w-full transition-all duration-300 ease-in-out origin-center ${contentAnimationClass}`}
       style={{ 
         visibility: showContent ? 'visible' : 'hidden',
       }}

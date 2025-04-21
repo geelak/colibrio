@@ -10,13 +10,13 @@ interface BarContainerProps {
   showHint: boolean;
   holdProgress: number;
   children: React.ReactNode;
-  onMouseDown?: (e: React.MouseEvent) => void;
-  onMouseUp?: (e: React.MouseEvent) => void;
-  onMouseLeave?: (e: React.MouseEvent) => void;
-  onMouseEnter?: (e: React.MouseEvent) => void;
+  onPointerDown?: (e: React.PointerEvent) => void;
+  onPointerUp?: (e: React.PointerEvent) => void;
+  onPointerLeave?: (e: React.PointerEvent) => void;
+  onPointerEnter?: (e: React.PointerEvent) => void;
+  onClick?: (e: React.MouseEvent) => void;
   onTouchStart?: (e: React.TouchEvent) => void;
   onTouchEnd?: (e: React.TouchEvent) => void;
-  onClick?: (e: React.MouseEvent) => void;
 }
 
 export const BarContainer = forwardRef(({
@@ -25,13 +25,13 @@ export const BarContainer = forwardRef(({
   showHint,
   holdProgress,
   children,
-  onMouseDown,
-  onMouseUp,
-  onMouseLeave,
-  onMouseEnter,
+  onPointerDown,
+  onPointerUp,
+  onPointerLeave,
+  onPointerEnter,
+  onClick,
   onTouchStart,
-  onTouchEnd,
-  onClick
+  onTouchEnd
 }: BarContainerProps, ref: ForwardedRef<HTMLDivElement>) => {
   return (
     <div 
@@ -52,13 +52,13 @@ export const BarContainer = forwardRef(({
         justifyContent: 'center',
         alignItems: 'center'
       }}
-      onMouseDown={onMouseDown}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseLeave}
-      onMouseEnter={onMouseEnter}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerLeave={onPointerLeave}
+      onPointerEnter={onPointerEnter}
+      onClick={onClick}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
-      onClick={onClick}
     >
       {/* Border progress animation */}
       <BorderProgress holdProgress={holdProgress} isExpanded={isExpanded} />
