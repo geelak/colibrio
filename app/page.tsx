@@ -79,31 +79,44 @@ export default function DemoReaderPage() {
 	const [canGoPrev, setCanGoPrev] = useState(false);
 	const [readerView, setReaderView] = useState<IReaderView | null>(null);
 	const [epubUrl, setEpubUrl] = useState<string | null>(null);
+	const [epubFile, setEpubFile] = useState<File | null>(null);
 
 	// Get search parameters from context
 	const searchParams = useSearchParamsContext();
+
+	// Handle file input change
+	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (file) {
+			setEpubFile(file);
+			setEpubUrl(null); // Clear URL if using file
+		}
+	};
 
 	/**
 	 * Effect to set the EPUB URL from search parameters.
 	 * This will be used to load the EPUB file into the reader.
 	 */
 	useEffect(() => {
-		const epub = searchParams.get('epub');
-		setEpubUrl(epub || '/demo/demo.epub');
-	}, [searchParams]);
+		if (!epubFile) {
+			const epub = searchParams.get('epub');
+			setEpubUrl(epub || '/demo/demo.epub');
+		}
+	}, [searchParams, epubFile]);
 
 	/**
 	 * Effect to initialize the reader.
 	 * Sets up the reading system engine, renderers, and loads the EPUB file.
 	 */
 	useEffect(() => {
-		if (!containerRef.current || !epubUrl) return;
+		if (!containerRef.current || (!epubUrl && !epubFile)) return;
 		let destroyed = false;
 
 		// Create an instance of ReaderInitializer
 		const readerInitializer = new ReaderInitializer(
 			containerRef.current,
 			epubUrl,
+			epubFile,
 			setReaderView,
 			setCurrentPage,
 			setTotalPages,
@@ -123,7 +136,7 @@ export default function DemoReaderPage() {
 			destroyed = true;
 			engineRef.current?.destroy();
 		};
-	}, [epubUrl]);
+	}, [epubUrl, epubFile]);
 
 	/**
 	 * Effect to update page state and add event listeners.
@@ -162,9 +175,18 @@ export default function DemoReaderPage() {
 		};
 	}, [readerView]);
 
-
 	return (
 		<>
+			{/* File input for local EPUB */}
+			<div style={{ padding: '1rem' }}>
+				<label htmlFor="file-select-input">Load local EPUB: </label>
+				<input
+					id="file-select-input"
+					type="file"
+					accept="application/epub+zip,.epub"
+					onChange={handleFileChange}
+				/>
+			</div>
 			<Content
 				ref={containerRef}
 				readerViewRef={readerViewRef}
@@ -190,6 +212,7 @@ class ReaderInitializer {
 	private epubPublication: any = null; // Store the original EPUB publication
 	private container: HTMLDivElement;
 	private epubUrl: string;
+	private epubFile: File | null;
 	private setReaderView: (view: IReaderView) => void;
 	private setCurrentPage: (page: number) => void;
 	private setTotalPages: (total: number) => void;
@@ -209,7 +232,8 @@ class ReaderInitializer {
 
 	constructor(
 		container: HTMLDivElement,
-		epubUrl: string,
+		epubUrl: string | null,
+		epubFile: File | null,
 		setReaderView: (view: IReaderView) => void,
 		setCurrentPage: (page: number) => void,
 		setTotalPages: (total: number) => void,
@@ -217,7 +241,8 @@ class ReaderInitializer {
 		setCanGoPrev: (canGo: boolean) => void
 	) {
 		this.container = container;
-		this.epubUrl = epubUrl;
+		this.epubUrl = epubUrl || '';
+		this.epubFile = epubFile || null;
 		this.setReaderView = setReaderView;
 		this.setCurrentPage = setCurrentPage;
 		this.setTotalPages = setTotalPages;
@@ -266,14 +291,17 @@ class ReaderInitializer {
 	 */
 	private async loadEpubFile(): Promise<void> {
 		try {
-			const response = await fetch(this.epubUrl);
-			if (!response.ok) throw new Error('Failed to fetch EPUB');
-
-			const blob = await response.blob();
+			let blob: Blob;
+			if (this.epubFile) {
+				blob = this.epubFile;
+			} else {
+				const response = await fetch(this.epubUrl);
+				if (!response.ok) throw new Error('Failed to fetch EPUB');
+				blob = await response.blob();
+			}
 			const ocfProvider = await EpubOcfResourceProvider.createFromBlob(blob);
 			this.epubPublication = ocfProvider.getDefaultPublication();
 			if (!this.epubPublication) throw new Error('Failed to load publication');
-
 		} catch (error) {
 			console.error('Error loading EPUB file:', error);
 			throw error;
