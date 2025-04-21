@@ -29,14 +29,6 @@ const vibrate = (pattern: number | number[]) => {
   }
 };
 
-// Utility to detect touch device
-const isTouchDevice = () => {
-  return typeof window !== 'undefined' && (
-    'ontouchstart' in window ||
-    (navigator && navigator.maxTouchPoints > 0)
-  );
-};
-
 export default function ClientUIBar({ 
   currentPage, 
   totalPages, 
@@ -200,10 +192,9 @@ export default function ClientUIBar({
     setLongPressActive(false);
   };
   
-  // Unified pointer/touch event handlers
-  const handlePressStart = (e: React.PointerEvent | React.TouchEvent) => {
-    // Only preventDefault for mouse, not for touch (to avoid blocking scroll)
-    if (!('touches' in e)) e.preventDefault();
+  // Unified pointer event handlers (work for both mouse and touch)
+  const handlePressStart = (e: React.PointerEvent) => {
+    // Removed preventDefault to allow slider interaction on desktop
     if (isInteractionLocked) return;
     if (navButtonClickedRef.current) return;
     holdStartTimeRef.current = Date.now();
@@ -319,9 +310,22 @@ export default function ClientUIBar({
 
   // Handle page change from progress bar
   const handlePageChange = (page: number) => {
-    if (readerViewRef.current) {
-      const timeline = readerViewRef.current.getPageProgressionTimeline();
-      timeline?.goToPage(page - 1); // Adjust for 0-based index
+    const readerView = readerViewRef.current;
+    if (readerView) {
+      const timeline = readerView.getPageProgressionTimeline();
+      if (timeline && typeof timeline.fetchLocatorFromPageIndex === 'function') {
+        timeline.fetchLocatorFromPageIndex(page)
+          .then((locator: any) => {
+            if (timeline === readerViewRef.current?.getPageProgressionTimeline()) {
+              readerViewRef.current?.goTo(locator);
+            }
+          })
+          .catch((err: any) => {
+            if (!(err && err.errorType === 'ABORTED')) {
+              console.error(err);
+            }
+          });
+      }
     }
   };
 
@@ -386,16 +390,11 @@ export default function ClientUIBar({
           longPressActive={longPressActive}
           showHint={showHint}
           holdProgress={holdProgress}
-          onPointerDown={!isTouchDevice() ? handlePressStart : undefined}
-          onPointerUp={!isTouchDevice() ? handlePressEnd : undefined}
+          onPointerDown={handlePressStart}
+          onPointerUp={handlePressEnd}
           onPointerEnter={handlePointerEnter}
           onPointerLeave={handlePointerLeave}
           onClick={handleClick}
-          // Add touch handlers for mobile
-          {...(isTouchDevice() ? {
-            onTouchStart: handlePressStart,
-            onTouchEnd: handlePressEnd
-          } : {})}
         >
           {!isExpanded ? (
             /* Collapsed state - pill with page indicator and now nav buttons on hover */
@@ -409,29 +408,43 @@ export default function ClientUIBar({
               canGoNext={canGoNext}
               onPrev={handlePrevPage}
               onNext={handleNextPage}
+              progressPercent={totalPages && totalPages > 0 ? ((currentPage || 1) / totalPages) * 100 : undefined}
             />
           ) : (
             /* Expanded state - custom minimal control bar */
-            <ContentContainer showContent={showContent}>
-              {/* Theme toggle on the far left */}
-              <ThemeToggle onToggle={() => vibrate(20)} />
+            <div className="w-full overflow-x-auto">
+              <ContentContainer showContent={showContent}>
+                {/* Theme toggle on the far left */}
+                <ThemeToggle onToggle={() => vibrate(20)} />
 
-              {/* Left arrow */}
-              <PreviousButton onClick={handlePrevPage} disabled={!canGoPrev} />
+                {/* Left arrow */}
+                <PreviousButton onClick={handlePrevPage} disabled={!canGoPrev} />
 
-              {/* Menu bar (TOC) in the center */}
-              <TOCButton onClick={handleTOC} isActive={activeTool === 'toc'} />
+                {/* Menu bar (TOC) in the center */}
+                <TOCButton onClick={handleTOC} isActive={activeTool === 'toc'} />
 
-              {/* Right arrow */}
-              <NextButton onClick={handleNextPage} disabled={!canGoNext} />
+                {/* Percentage indicator beside TOC button */}
+                <span 
+                  className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-2 mr-2 min-w-[48px] text-center select-none"
+                  aria-label="Progress percentage"
+                  style={{ letterSpacing: '0.01em' }}
+                >
+                  {totalPages && totalPages > 0
+                    ? `${(((currentPage || 1) / totalPages) * 100).toFixed(2)}%`
+                    : '--%'}
+                </span>
 
-              {/* Progress bar on the far right */}
-              <ProgressBar 
-                currentPage={currentPage || 1}
-                totalPages={totalPages || 100}
-                onPageChange={handlePageChange}
-              />
-            </ContentContainer>
+                {/* Right arrow */}
+                <NextButton onClick={handleNextPage} disabled={!canGoNext} />
+
+                {/* Progress bar on the far right */}
+                <ProgressBar 
+                  currentPage={currentPage || 1}
+                  totalPages={totalPages || 100}
+                  onPageChange={handlePageChange}
+                />
+              </ContentContainer>
+            </div>
           )}
         </BarContainer>
       </div>

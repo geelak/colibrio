@@ -7,4 +7,6 @@ export interface UIBarProps {
   canGoNext: boolean;
   canGoPrev: boolean;
   readerViewRef: MutableRefObject<IReaderView | null>;
+  progressPercent?: number;
+  onTOCClick?: () => void;
 } 

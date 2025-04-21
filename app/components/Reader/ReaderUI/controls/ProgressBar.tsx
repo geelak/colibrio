@@ -25,8 +25,8 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       max={totalPages}
       value={currentPage}
       onChange={handleChange}
-      onClick={(e) => e.stopPropagation()}
-      className="w-40 h-2 rounded-full appearance-none bg-neutral-200 dark:bg-neutral-700"
+      onInput={handleChange}
+      className="flex-1 min-w-0 w-full max-w-[120px] sm:max-w-[180px] md:max-w-[240px] h-2 rounded-full appearance-none bg-neutral-200 dark:bg-neutral-700"
       style={{
         accentColor: 'var(--color-primary)',
       }}

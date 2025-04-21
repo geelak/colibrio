@@ -15,7 +15,7 @@ export default function UIBar(props: UIBarProps) {
         </div>
       }
     >
-      <ClientUIBar {...props} />
+      <ClientUIBar {...props} progressPercent={props.progressPercent} />
     </Suspense>
   );
 } 

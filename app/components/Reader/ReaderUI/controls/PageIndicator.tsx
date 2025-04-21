@@ -12,6 +12,7 @@ interface PageIndicatorProps {
   canGoNext?: boolean;
   onPrev?: (e: React.MouseEvent) => void;
   onNext?: (e: React.MouseEvent) => void;
+  progressPercent?: number;
 }
 
 export const PageIndicator: React.FC<PageIndicatorProps> = ({
@@ -23,8 +24,12 @@ export const PageIndicator: React.FC<PageIndicatorProps> = ({
   canGoPrev = false,
   canGoNext = false,
   onPrev,
-  onNext
+  onNext,
+  progressPercent
 }) => {
+  // Debug log for props
+  console.log('[PageIndicator] progressPercent:', progressPercent, 'currentPage:', currentPage, 'totalPages:', totalPages);
+
   // Track nav button interaction state
   const [navButtonClicked, setNavButtonClicked] = useState(false);
   
@@ -103,7 +108,9 @@ export const PageIndicator: React.FC<PageIndicatorProps> = ({
             color: isChangeIndicator ? 'var(--color-primary)' : 'var(--color-text-secondary)'
           }}
         >
-          {currentPage} / {totalPages || '--'}
+          {progressPercent !== undefined
+            ? `${progressPercent.toFixed(2)}%`
+            : `${currentPage} / ${totalPages || '--'}`}
         </span>
         
         {/* Show next button when hovered */}
