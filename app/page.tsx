@@ -48,8 +48,12 @@ import {
 	IReaderPublicationOptions,
 	IReaderView,
 	// @ts-ignore
-	ContentDisplayAreaType,
+	ContentDisplayAreaType
 } from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-base';
+
+import {
+	WebSpeechTtsSynthesizer
+} from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-engine';
 
 // Import the new CollapsibleUIBar component
 import CollapsibleUIBar from './old/CollapsibleUIBar';
@@ -82,6 +86,16 @@ export default function DemoReaderPage() {
 	const [epubUrl, setEpubUrl] = useState<string | null>(null);
 	const [epubFile, setEpubFile] = useState<File | null>(null);
 	const [showTOC, setShowTOC] = useState(false);
+
+	// TTS/Audio state
+	const [ttsPlayer, setTtsPlayer] = useState<any>(null);
+	const [ttsState, setTtsState] = useState<'playing' | 'paused' | 'stopped'>('stopped');
+	const [ttsVoices, setTtsVoices] = useState<{ label: string; value: string }[]>([]);
+	const [ttsVoice, setTtsVoice] = useState<string | undefined>(undefined);
+	const [ttsSpeed, setTtsSpeed] = useState<number>(1);
+
+	// Add a ref to track browser TTS paused state
+	const browserTtsPausedRef = useRef(false);
 
 	// Get search parameters from context
 	const searchParams = useSearchParamsContext();
@@ -123,7 +137,8 @@ export default function DemoReaderPage() {
 			setCurrentPage,
 			setTotalPages,
 			setCanGoNext,
-			setCanGoPrev
+			setCanGoPrev,
+			setTtsPlayer
 		);
 
 		// Call renderEpub method
@@ -177,6 +192,157 @@ export default function DemoReaderPage() {
 		};
 	}, [readerView]);
 
+	useEffect(() => {
+		if (ttsPlayer && ttsPlayer.addEventListener) {
+			ttsPlayer.addEventListener('play', () => setTtsState('playing'));
+			ttsPlayer.addEventListener('pause', () => setTtsState('paused'));
+			ttsPlayer.addEventListener('stop', () => setTtsState('stopped'));
+		}
+	}, [ttsPlayer]);
+
+	// Populate TTS voices from browser
+	useEffect(() => {
+		function updateVoices() {
+			const voices = window.speechSynthesis?.getVoices?.() || [];
+			const formatted = voices.map(v => ({ label: v.name + (v.lang ? ` (${v.lang})` : ''), value: v.name }));
+			setTtsVoices(formatted);
+			if (!ttsVoice && formatted.length > 0) setTtsVoice(formatted[0].value);
+		}
+		if (typeof window !== 'undefined' && window.speechSynthesis) {
+			window.speechSynthesis.onvoiceschanged = updateVoices;
+			updateVoices();
+		}
+	}, []);
+
+	// Helper: get selected text from visible iframe(s) or window
+	function getSelectedText() {
+		const container = containerRef.current;
+		if (container) {
+			const iframes = container.querySelectorAll('iframe');
+			for (let i = 0; i < iframes.length; i++) {
+				const iframe = iframes[i];
+				try {
+					const sel = iframe.contentWindow?.getSelection?.();
+					if (sel && sel.toString().trim()) return sel.toString();
+				} catch {}
+			}
+		}
+		if (typeof window !== 'undefined') {
+			const sel = window.getSelection?.();
+			if (sel && sel.toString().trim()) return sel.toString();
+		}
+		return '';
+	}
+
+	// Helper: get visible page text from visible iframe(s)
+	async function getVisiblePageText() {
+		const container = containerRef.current;
+		if (container) {
+			const iframes = container.querySelectorAll('iframe');
+			let text = '';
+			for (let i = 0; i < iframes.length; i++) {
+				const iframe = iframes[i];
+				try {
+					const doc = iframe.contentDocument;
+					if (doc && doc.body) text += doc.body.innerText + '\n';
+				} catch {}
+			}
+			if (text.trim()) return text.trim();
+		}
+		return '';
+	}
+
+	// Updated handleTTSPlay
+	const handleTTSPlay = async () => {
+		if (ttsState === 'paused') {
+			// Resume
+			if (ttsPlayer && ttsPlayer.resume) {
+				ttsPlayer.resume();
+			} else if (typeof window !== 'undefined' && window.speechSynthesis) {
+				window.speechSynthesis.resume();
+				browserTtsPausedRef.current = false;
+			}
+			setTtsState('playing');
+			return;
+		}
+		// Start reading as before
+		let text = getSelectedText();
+		if (!text) text = await getVisiblePageText();
+		if (!text) {
+			alert('No text found to read.');
+			return;
+		}
+		if (ttsPlayer && ttsPlayer.speak) {
+			if (ttsPlayer.setVoice && ttsVoice) ttsPlayer.setVoice(ttsVoice);
+			if (ttsPlayer.setSpeed) ttsPlayer.setSpeed(ttsSpeed);
+			ttsPlayer.speak(text);
+			setTtsState('playing');
+		} else if (typeof window !== 'undefined' && window.speechSynthesis) {
+			const utter = new window.SpeechSynthesisUtterance(text);
+			const voices = window.speechSynthesis.getVoices();
+			if (ttsVoice) utter.voice = voices.find(v => v.name === ttsVoice) || null;
+			utter.rate = ttsSpeed;
+			utter.onend = () => setTtsState('stopped');
+			utter.onpause = () => setTtsState('paused');
+			utter.onresume = () => setTtsState('playing');
+			window.speechSynthesis.cancel();
+			window.speechSynthesis.speak(utter);
+			browserTtsPausedRef.current = false;
+			setTtsState('playing');
+		}
+	};
+
+	const handleTTSPause = () => {
+		if (ttsPlayer && ttsPlayer.pause) {
+			ttsPlayer.pause();
+			setTtsState('paused');
+		} else if (typeof window !== 'undefined' && window.speechSynthesis) {
+			window.speechSynthesis.pause();
+			browserTtsPausedRef.current = true;
+			setTtsState('paused');
+		}
+	};
+
+	const handleTTSStop = () => {
+		if (ttsPlayer && ttsPlayer.stop) {
+			ttsPlayer.stop();
+			setTtsState('stopped');
+		} else if (typeof window !== 'undefined' && window.speechSynthesis) {
+			window.speechSynthesis.cancel();
+			browserTtsPausedRef.current = false;
+			setTtsState('stopped');
+		}
+	};
+
+	const handleTTSNext = () => {
+		if (ttsPlayer && ttsPlayer.next) {
+			ttsPlayer.next();
+			setTtsState('playing');
+		} else {
+			alert('Next is not supported for browser TTS.');
+		}
+	};
+
+	const handleTTSPrev = () => {
+		if (ttsPlayer && ttsPlayer.previous) {
+			ttsPlayer.previous();
+			setTtsState('playing');
+		} else {
+			alert('Previous is not supported for browser TTS.');
+		}
+	};
+
+	const handleVoiceChange = (voice: string) => {
+		setTtsVoice(voice);
+		if (ttsPlayer?.setVoice) ttsPlayer.setVoice(voice);
+	};
+	const handleSpeedChange = (speed: number) => {
+		setTtsSpeed(speed);
+		if (ttsPlayer?.setSpeed) ttsPlayer.setSpeed(speed);
+	};
+
+	const ttsSupportsNextPrev = !!ttsPlayer?.next && !!ttsPlayer?.previous;
+
 	return (
 		<>
 			{/* File input for local EPUB */}
@@ -200,6 +366,18 @@ export default function DemoReaderPage() {
 				canGoPrev={canGoPrev}
 				readerViewRef={readerViewRef}
 				onTOCClick={() => setShowTOC(true)}
+				onTTSPlay={handleTTSPlay}
+				onTTSPause={handleTTSPause}
+				onTTSStop={handleTTSStop}
+				onTTSPrev={handleTTSPrev}
+				onTTSNext={handleTTSNext}
+				ttsVoices={ttsVoices}
+				ttsVoice={ttsVoice}
+				onVoiceChange={handleVoiceChange}
+				ttsSpeed={ttsSpeed}
+				onSpeedChange={handleSpeedChange}
+				ttsState={ttsState}
+				ttsSupportsNextPrev={ttsSupportsNextPrev}
 			/>
 			{showTOC && (
 				<TableOfContents
@@ -228,6 +406,7 @@ class ReaderInitializer {
 	private setTotalPages: (total: number) => void;
 	private setCanGoNext: (canGo: boolean) => void;
 	private setCanGoPrev: (canGo: boolean) => void;
+	private setTtsPlayer?: (player: any) => void;
 
 	// Updated metadata type definition
 	private metadata: {
@@ -248,7 +427,8 @@ class ReaderInitializer {
 		setCurrentPage: (page: number) => void,
 		setTotalPages: (total: number) => void,
 		setCanGoNext: (canGo: boolean) => void,
-		setCanGoPrev: (canGo: boolean) => void
+		setCanGoPrev: (canGo: boolean) => void,
+		setTtsPlayer?: (player: any) => void
 	) {
 		this.container = container;
 		this.epubUrl = epubUrl || '';
@@ -258,6 +438,7 @@ class ReaderInitializer {
 		this.setTotalPages = setTotalPages;
 		this.setCanGoNext = setCanGoNext;
 		this.setCanGoPrev = setCanGoPrev;
+		this.setTtsPlayer = setTtsPlayer;
 
 		this.engine = new ReadingSystemEngine({
 			licenseApiKey: process.env.NEXT_PUBLIC_COLIBRIO_LICENSE_KEY || '',
@@ -583,7 +764,70 @@ class ReaderInitializer {
 			this.readerView?.setReaderDocuments(publication.getSpine());
 			await this.readerView?.goToStart();
 
+
 			this.setReaderView(this.readerView!);
+
+			// === Legible annotation layer & audio/TTS bootstrap ===
+			try {
+			  const layerName = "legible-layer";
+			  let layer = this.readerView!.getAnnotationLayerByName(layerName);
+			  if (!layer) {
+			    layer = this.readerView!.createAnnotationLayer(layerName, {
+			      zIndex: 5,
+			      layerStyle: { pointerEvents: "none", mixBlendMode: "multiply" },
+			    });
+			    this.readerView!.setAnnotationLayerVisible(layer, true);
+			  }
+
+			  // Set default annotation appearance
+			  layer.setDefaultAnnotationOptions({
+			    containerClassName: "legible-annotation",
+			    rangeStyle: {
+			      backgroundColor: "rgba(128, 0, 255, 0.2)",
+			      borderRadius: "0.25rem",
+			      pointerEvents: "auto",
+			      cursor: "pointer",
+			    },
+			  });
+
+			  // Add highlight for current visible locator + 3 ToC items
+			  const visibleLoc = await this.readerView!.getVisibleLocator();
+			  const nav = this.publication!.getTableOfContents();
+			  const firstThree = nav.slice(0, 3).map((item) => item.getLocator());
+			  layer.createAnnotations([visibleLoc, ...firstThree]);
+
+			  // Interactivity
+			  for (const ann of layer.getAnnotations()) {
+			    ann.setOptions({
+			      onClick: () => {
+			        const loc = ann.getLocator();
+			        this.readerView!.goToLocator(loc);
+			        console.log("Clicked annotation for", loc.href);
+			      },
+			    });
+			  }
+
+			  // Audio / TTS setup
+			  try {
+			    const timeline = await this.engine.loadSyncMediaTimeline("/demo/media-overlay.json");
+			    const player = this.engine.createSyncMediaPlayer({ name: "voice", timeline });
+			    this.readerView!.setSyncMediaPlayer(player);
+			    player.play(); // autoplay for demo
+			    if (this.setTtsPlayer) this.setTtsPlayer(player);
+			  } catch {
+			    const synth = new WebSpeechTtsSynthesizer({ lang: "en-US" });
+			    this.readerView!.setTtsSynthesizer(synth);
+			    if (this.setTtsPlayer) this.setTtsPlayer(synth);
+			  }
+
+			  // Refresh annotations on page change
+			  this.readerView!.addEngineEventListener("visiblePagesChanged", () => {
+			    const layer = this.readerView!.getAnnotationLayerByName("legible-layer");
+			    if (layer) layer.refreshAnnotations();
+			  });
+			} catch (err) {
+			  console.error("Annotation / audio bootstrap failed:", err);
+			}
 
 			setTimeout(() => {
 				const timeline = this.readerView?.getPageProgressionTimeline();

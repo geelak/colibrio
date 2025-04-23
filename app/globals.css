@@ -195,3 +195,7 @@ html, body {
 .css-version-indicator::after {
 	content: 'css v1.17';
 }
+
+.highlight-list-item--in-visible-range {
+	font-weight: bold;
+}

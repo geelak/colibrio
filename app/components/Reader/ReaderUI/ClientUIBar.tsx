@@ -17,6 +17,7 @@ import { ButtonGroup } from './controls/ButtonGroup';
 import { PreviousButton } from './controls/PreviousButton';
 import { TOCButton } from './controls/TOCButton';
 import { NextButton } from './controls/NextButton';
+import AudioTTSControls from './controls/AudioTTSControls';
 
 // Vibration utility
 const vibrate = (pattern: number | number[]) => {
@@ -35,7 +36,19 @@ export default function ClientUIBar({
   canGoNext, 
   canGoPrev, 
   readerViewRef, 
-  onTOCClick
+  onTOCClick,
+  onTTSPlay,
+  onTTSPause,
+  onTTSStop,
+  onTTSPrev,
+  onTTSNext,
+  ttsVoices = [],
+  ttsVoice,
+  onVoiceChange,
+  ttsSpeed = 1,
+  onSpeedChange,
+  ttsState = 'stopped',
+  ttsSupportsNextPrev,
 }: UIBarProps) {
   // Theme context
   const { isLoaded } = useTheme();
@@ -73,6 +86,9 @@ export default function ClientUIBar({
   const interactionLockTime = 550;
   const contentDelay = 150;
   const pageChangeDisplayTime = 1000;
+
+  // Add state for showing audio controls
+  const [showAudioControls, setShowAudioControls] = useState(false);
 
   // Handle page changes to show temporary page indicator
   useEffect(() => {
@@ -374,6 +390,7 @@ export default function ClientUIBar({
         onClick={() => {
           setIsExpanded(false);
           setShowPageInfo(false);
+          setShowAudioControls(false);
         }}
       />
       
@@ -413,37 +430,64 @@ export default function ClientUIBar({
           ) : (
             /* Expanded state - custom minimal control bar */
             <div className="w-full overflow-x-auto">
-              <ContentContainer showContent={showContent}>
-                {/* Theme toggle on the far left */}
-                <ThemeToggle onToggle={() => vibrate(20)} />
-
-                {/* Left arrow */}
-                <PreviousButton onClick={handlePrevPage} disabled={!canGoPrev} />
-
-                {/* Menu bar (TOC) in the center */}
-                <TOCButton onClick={handleTOC} isActive={activeTool === 'toc'} />
-
-                {/* Percentage indicator beside TOC button */}
-                <span 
-                  className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-2 mr-2 min-w-[48px] text-center select-none"
-                  aria-label="Progress percentage"
-                  style={{ letterSpacing: '0.01em' }}
-                >
-                  {totalPages && totalPages > 0
-                    ? `${(((currentPage || 1) / totalPages) * 100).toFixed(2)}%`
-                    : '--%'}
-                </span>
-
-                {/* Right arrow */}
-                <NextButton onClick={handleNextPage} disabled={!canGoNext} />
-
-                {/* Progress bar on the far right */}
-                <ProgressBar 
-                  currentPage={currentPage || 1}
-                  totalPages={totalPages || 100}
-                  onPageChange={handlePageChange}
+              <div className="relative w-full">
+                <ContentContainer showContent={showContent}>
+                  {/* Theme toggle on the far left */}
+                  <ThemeToggle onToggle={() => vibrate(20)} />
+                  {/* Left arrow */}
+                  <PreviousButton onClick={handlePrevPage} disabled={!canGoPrev} />
+                  {/* TOC and Earphones button in the center */}
+                  <TOCButton onClick={handleTOC} isActive={activeTool === 'toc'} />
+                  <button
+                    onClick={() => setShowAudioControls((v) => !v)}
+                    aria-label="Audio/TTS Controls"
+                    className={`p-2 rounded-full flex-shrink-0 transition-colors hover:bg-neutral-200 dark:hover:bg-neutral-700 ml-2 ${showAudioControls ? 'bg-neutral-200 dark:bg-neutral-700' : ''}`}
+                    style={{ display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    {/* Earphones icon (SVG) */}
+                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                      <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                      <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3" />
+                      <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3" />
+                    </svg>
+                  </button>
+                  {/* Percentage indicator beside TOC button */}
+                  <span 
+                    className="text-xs font-medium text-gray-500 dark:text-gray-400 ml-2 mr-2 min-w-[48px] text-center select-none"
+                    aria-label="Progress percentage"
+                    style={{ letterSpacing: '0.01em' }}
+                  >
+                    {totalPages && totalPages > 0
+                      ? `${(((currentPage || 1) / totalPages) * 100).toFixed(2)}%`
+                      : '--%'}
+                  </span>
+                  {/* Right arrow */}
+                  <NextButton onClick={handleNextPage} disabled={!canGoNext} />
+                  {/* Progress bar on the far right */}
+                  <ProgressBar 
+                    currentPage={currentPage || 1}
+                    totalPages={totalPages || 100}
+                    onPageChange={handlePageChange}
+                  />
+                </ContentContainer>
+                {/* Audio/TTS Controls, sliding up from the bar */}
+                <AudioTTSControls
+                  show={showAudioControls}
+                  onClose={() => setShowAudioControls(false)}
+                  onTTSPlay={onTTSPlay}
+                  onTTSPause={onTTSPause}
+                  onTTSStop={onTTSStop}
+                  onTTSPrev={onTTSPrev}
+                  onTTSNext={onTTSNext}
+                  ttsVoices={ttsVoices}
+                  ttsVoice={ttsVoice}
+                  onVoiceChange={onVoiceChange}
+                  ttsSpeed={ttsSpeed}
+                  onSpeedChange={onSpeedChange}
+                  ttsState={ttsState}
+                  ttsSupportsNextPrev={ttsSupportsNextPrev}
                 />
-              </ContentContainer>
+              </div>
             </div>
           )}
         </BarContainer>

@@ -2,54 +2,42 @@
 
 import { forwardRef, useEffect, useRef, ForwardedRef } from 'react';
 import type { IReaderView } from '@colibrio/colibrio-reader-framework/colibrio-readingsystem-base';
+import { AppHighlighter } from '../ReaderUI/controls/AppHighlighter';
 
 export interface ContentProps {
   readerViewRef: React.RefObject<IReaderView | null>;
 }
 
-const Content = forwardRef(({ 
-  readerViewRef 
-}: ContentProps, ref: ForwardedRef<HTMLDivElement>) => {
-  
+const Content = forwardRef(function Content(
+  { readerViewRef }: ContentProps,
+  ref: ForwardedRef<HTMLDivElement>
+) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const highlightsContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    // Check container ref first
-    if (!(typeof ref === 'object' && ref?.current)) {
-      console.log('⚠️ Container ref not yet set');
-      return;
-    }
-    
-    // Log container ref success
-    console.log('✅ Container ref is set:', ref.current);
-
-    // Set up watcher for readerViewRef
-    const checkReaderView = () => {
-      if (readerViewRef?.current) {
-        console.log('✅ ReaderView ref is now set:', readerViewRef.current);
-        return true;
+    if (readerViewRef.current && highlightsContainerRef.current) {
+      // Only instantiate once
+      if (!(highlightsContainerRef.current as any)._appHighlighter) {
+        (highlightsContainerRef.current as any)._appHighlighter = new AppHighlighter(
+          readerViewRef.current,
+          highlightsContainerRef.current
+        );
       }
-      return false;
-    };
-
-    // Initial check
-    if (!checkReaderView()) {
-      console.log('ℹ️ Waiting for ReaderView to be initialized...');
     }
-
-    // Watch for changes to readerViewRef
-    const interval = setInterval(() => {
-      if (checkReaderView()) {
-        clearInterval(interval);
-      }
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, [ref, readerViewRef]);
+  }, [readerViewRef.current]);
 
   return (
-    <div 
-      ref={ref}
-      className="w-full h-full bg-neutral-100 full-screen-container"
-    />
+    <div ref={ref} className="relative w-full h-full">
+      <div ref={containerRef} className="w-full h-full" />
+      {readerViewRef.current && (
+        <div id="highlights-container" ref={highlightsContainerRef} style={{ position: 'absolute', top: 16, right: 16, zIndex: 100 }}>
+          <button id="create-highlight" disabled style={{ marginBottom: 8 }}>Create highlight</button>
+          <h4>Highlights (bold if visible in ReaderView)</h4>
+          <ul id="highlight-list" style={{ minWidth: 200, background: '#fff', border: '1px solid #eee', borderRadius: 4, padding: 8, listStyle: 'none' }}></ul>
+        </div>
+      )}
+    </div>
   );
 });
 

@@ -9,4 +9,16 @@ export interface UIBarProps {
   readerViewRef: MutableRefObject<IReaderView | null>;
   progressPercent?: number;
   onTOCClick?: () => void;
+  onTTSPlay?: () => void;
+  onTTSPause?: () => void;
+  onTTSStop?: () => void;
+  onTTSPrev?: () => void;
+  onTTSNext?: () => void;
+  ttsVoices?: { label: string; value: string }[];
+  ttsVoice?: string;
+  onVoiceChange?: (voice: string) => void;
+  ttsSpeed?: number;
+  onSpeedChange?: (speed: number) => void;
+  ttsState?: 'playing' | 'paused' | 'stopped';
+  ttsSupportsNextPrev?: boolean;
 } 
